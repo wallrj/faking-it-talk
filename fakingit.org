@@ -114,6 +114,166 @@ PASSED (successes=2)
 
 * And now we can start fleshing out the interface...
 
+* Start with ``containers``
+
+(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
+diff --git a/docker/client.py b/docker/client.py
+index 44d7dd5..6f128db 100644
+--- a/docker/client.py
++++ b/docker/client.py
+@@ -33,6 +33,12 @@ class IDockerClient(Interface):
+     """
+     Create, delete and list docker containers.
+     """
++    def containers():
++        """
++        List containers. Identical to the ``docker ps`` command.
++
++        https://docker-py.readthedocs.org/en/latest/api/#containers
++        """
+
+
+ @implementer(IDockerClient)
+(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git commit -am "^C
+(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+tests.integration_test
+  RealDockerClientTests
+    test_interface ...                                                     [OK]
+tests.test
+  FakeDockerClientTests
+    test_interface ...                                                  [ERROR]
+
+===============================================================================
+[ERROR]
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/unittest/case.py", line 367, in run
+    testMethod()
+  File "/home/richard/projects/docker-py/docker/testtools.py", line 37, in test_interface
+    self.assertTrue(verifyObject(IDockerClient, self.client))
+  File "/home/richard/.virtualenvs/docker-py/lib/python2.7/site-packages/zope/interface/verify.py", line 105, in verifyObject
+    return _verify(iface, candidate, tentative, vtype='o')
+  File "/home/richard/.virtualenvs/docker-py/lib/python2.7/site-packages/zope/interface/verify.py", line 62, in _verify
+    raise BrokenImplementation(iface, name)
+zope.interface.exceptions.BrokenImplementation: An object has failed to implement interface <InterfaceClass docker.client.IDockerClient>
+
+	The containers attribute was not provided.
+
+
+tests.test.FakeDockerClientTests.test_interface
+-------------------------------------------------------------------------------
+Ran 2 tests in 0.040s
+
+FAILED (errors=1, successes=1)
+
+* And we'll start with a test for empty list of containers.
+
+(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
+diff --git a/docker/testtools.py b/docker/testtools.py
+index 5e536f7..c622e0c 100644
+--- a/docker/testtools.py
++++ b/docker/testtools.py
+@@ -24,6 +24,8 @@ class FakeDockerClient(object):
+     """
+     An in-memory implementation of ``IDockerClient``.
+     """
++    def containers(self):
++        return []
+
+
+ class IDockerClientTestsMixin(object):
+@@ -36,6 +38,13 @@ class IDockerClientTestsMixin(object):
+	 """
+	 self.assertTrue(verifyObject(IDockerClient, self.client))
+
++    def test_containers_empty(self):
++        """
++        ``IDockerContainers.containers`` returns an empty list if there are no
++        running containers.
++        """
++        self.assertEqual([], self.client.containers())
++
+
+ def make_idockerclient_tests(dockerclient_factory):
+     """
+
+* Hmm Docker API versions
+
+(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+tests.integration_test
+  RealDockerClientTests
+    test_containers_empty ...                                           [ERROR]
+    test_interface ...                                                     [OK]
+tests.test
+  FakeDockerClientTests
+    test_containers_empty ...                                              [OK]
+    test_interface ...                                                     [OK]
+
+===============================================================================
+[ERROR]
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/unittest/case.py", line 367, in run
+    testMethod()
+  File "/home/richard/projects/docker-py/docker/testtools.py", line 46, in test_containers_empty
+    self.assertEqual([], self.client.containers())
+  File "/home/richard/projects/docker-py/docker/client.py", line 211, in containers
+    res = self._result(self._get(u, params=params), True)
+  File "/home/richard/projects/docker-py/docker/clientbase.py", line 106, in _result
+    self._raise_for_status(response)
+  File "/home/richard/projects/docker-py/docker/clientbase.py", line 102, in _raise_for_status
+    raise errors.APIError(e, response, explanation=explanation)
+docker.errors.APIError: 404 Client Error: Not Found ("client and server don't have same version (client : 1.19, server: 1.17)")
+
+tests.integration_test.RealDockerClientTests.test_containers_empty
+-------------------------------------------------------------------------------
+Ran 4 tests in 0.059s
+
+FAILED (errors=1, successes=3)
+
+* Specify 'auto' to use the API version provided by the server.
+** ok
+
+(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
+diff --git a/tests/integration_test.py b/tests/integration_test.py
+index c9d0f0c..60cde8e 100644
+--- a/tests/integration_test.py
++++ b/tests/integration_test.py
+@@ -14,6 +14,7 @@
+
+ import base64
+ import contextlib
++from functools import partial
+ import json
+ import io
+ import os
+@@ -1480,7 +1481,9 @@ class TestRegressions(BaseTestCase):
+
+
+ class RealDockerClientTests(
+-        make_idockerclient_tests(dockerclient_factory=docker.Client)
++        make_idockerclient_tests(
++            dockerclient_factory=partial(docker.Client, version='auto')
++        )
+ ):
+     """
+     Tests for ``docker.Client`` adherence to ``IDockerClient``.
+(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git commit -am "Automatically determine the docker server version"
+[fake-dockerclient-109 ba3b144] Automatically determine the docker server version
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+(docker-py)(fake-dockerclient-109 ?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+tests.integration_test
+  RealDockerClientTests
+    test_containers_empty ...                                              [OK]
+    test_interface ...                                                     [OK]
+tests.test
+  FakeDockerClientTests
+    test_containers_empty ...                                              [OK]
+    test_interface ...                                                     [OK]
+
+-------------------------------------------------------------------------------
+Ran 4 tests in 0.079s
+
+PASSED (successes=4)
+
 
 * Case Study
 
