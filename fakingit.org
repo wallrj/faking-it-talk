@@ -10,6 +10,39 @@
 
 * Introduction
 
+* Choose a library
+
+* docker-py
+
+* How do they test their API / interface?
+
+* Interface is documented...manually
+
+** https://docker-py.readthedocs.org/en/stable/api/
+
+** docs/api.md
+
+* Has anyone else had this thought?
+** Yes :-)
+** https://github.com/docker/docker-py/issues/109
+** "Provide a Mock implementation"
+
+* So let's do make a start
+
+* (master =)[~/projects/docker-py]$ git checkout -b fake-dockerclient-109
+
+* IDockerClient
+
+* And a test to go with it.
+
+* Case Study
+
+* IDockerClientAPI
+
+* IBlockDeviceAPI
+
+* 
+
 * Summary
 
 * Questions?
