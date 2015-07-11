@@ -27,7 +27,7 @@
 ** https://github.com/docker/docker-py/issues/109
 ** "Provide a Mock implementation"
 
-* So let's do make a start
+* So let's make a start
 
 * (master =)[~/projects/docker-py]$ git checkout -b fake-dockerclient-109
 
@@ -35,13 +35,93 @@
 
 * And a test to go with it.
 
+* Skeleton / Boilerplate
+
+(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+tests.integration_test
+  RealDockerClientTests
+    test_interface ...                                                  [ERROR]
+tests.test
+  FakeDockerClientTests
+    test_interface ...                                                  [ERROR]
+
+===============================================================================
+[ERROR]
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/unittest/case.py", line 367, in run
+    testMethod()
+  File "/home/richard/projects/docker-py/docker/testtools.py", line 35, in test_interface
+    self.assertTrue(verifyObject(IDockerClient, self.client))
+  File "/home/richard/.virtualenvs/docker-py/lib/python2.7/site-packages/zope/interface/verify.py", line 105, in verifyObject
+    return _verify(iface, candidate, tentative, vtype='o')
+  File "/home/richard/.virtualenvs/docker-py/lib/python2.7/site-packages/zope/interface/verify.py", line 50, in _verify
+    raise DoesNotImplement(iface)
+zope.interface.exceptions.DoesNotImplement: An object does not implement interface <InterfaceClass docker.client.IDockerClient>
+
+
+
+tests.integration_test.RealDockerClientTests.test_interface
+tests.test.FakeDockerClientTests.test_interface
+-------------------------------------------------------------------------------
+Ran 2 tests in 0.043s
+
+FAILED (errors=2)
+
+* Easy enough to fix that
+
+commit 0c4b71fef273e92afc75a2e29fb77c3348bc142e
+Author: Richard Wall <richard@the-moon.net>
+Date:   Sat Jul 11 14:12:13 2015 +0100
+
+    Implement the new interface
+
+diff --git a/docker/client.py b/docker/client.py
+index 349dbb2..44d7dd5 100644
+--- a/docker/client.py
++++ b/docker/client.py
+@@ -20,7 +20,7 @@ from datetime import datetime
+
+ import six
+
+-from zope.interface import Interface
++from zope.interface import Interface, implementer
+
+ from . import clientbase
+ from . import constants
+@@ -35,6 +35,7 @@ class IDockerClient(Interface):
+     """
+
+
++@implementer(IDockerClient)
+ class Client(clientbase.ClientBase):
+     @check_resource
+     def attach(self, container, stdout=True, stderr=True,
+
+* Tests now pass
+
+(docker-py)(fake-dockerclient-109 ?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+tests.integration_test
+  RealDockerClientTests
+    test_interface ...                                                     [OK]
+tests.test
+  FakeDockerClientTests
+    test_interface ...                                                     [OK]
+
+-------------------------------------------------------------------------------
+Ran 2 tests in 0.042s
+
+PASSED (successes=2)
+
+* And now we can start fleshing out the interface...
+
+
 * Case Study
 
 * IDockerClientAPI
 
 * IBlockDeviceAPI
 
-* 
+*
 
 * Summary
 
