@@ -1,0 +1,19 @@
+#+TITLE: Faking It
+#+DATE: Thursday 23 July 2015 at 12.30
+#+AUTHOR: Testing With Verified Fakes
+#+EMAIL: Richard Wall (@wallrj) <richard.wall@clusterhq.com>
+#+REVEAL_THEME: night
+#+REVEAL_TRANS: linear
+#+REVEAL-SLIDE-NUMBER: t
+#+OPTIONS: timestamp:nil author:nil num:nil toc:nil reveal_rolling_links:nil
+#+OPTIONS: reveal_history:t
+
+* Introduction
+
+* Summary
+
+* Questions?
+
+* Thanks and links
+  * Richard Wall: https://github.com/wallrj
+  * ClusterHQ: https://github.com/ClusterHQ
