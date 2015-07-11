@@ -274,6 +274,20 @@ Ran 4 tests in 0.079s
 
 PASSED (successes=4)
 
+* What next?
+
+* create_container
+** Creates a container but doesn't start it.
+** Our ``containers`` API currently only returns running containers, so we'll need to modify it a little.
+** We can implement a test that creates both of these behaviours.
+** Creates and lists the newly created container.
+** ``docker.Client.create_container`` and ``containers`` have masses of arguments (too many??) but we'll start with the bare minimum; add only what we need to the interface.
+
+* Chicken-and-egg
+** Can't test ``create_container`` until we've got a ``containers`` API that lists both running and non-running containers
+** Can't easily / generally test ``containers(all=True)`` until we've implemented ``create_container``
+** Implement both together.
+**
 
 * Case Study
 
