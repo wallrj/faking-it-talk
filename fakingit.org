@@ -10,11 +10,27 @@
 
 * Introduction
 
+  *
+
 * Choose a library
+
+  While preparing for talk I went in search of examples of other people looking for verified fakes.
+  Something close to home.
+  Flocker calls the Docker API using ``docker-py``
 
 * docker-py
 
+  A Python wrapper around the Docker REST API.
+
 * How do they test their API / interface?
+
+  A mock HTTP server, plus
+  Canned REST responses
+
+* Where is the docker-py API defined?
+
+  * Is it formally defined?
+  * Look at the API documentation....
 
 * Interface is documented...manually
 
@@ -22,10 +38,12 @@
 
 ** docs/api.md
 
-* Has anyone else had this thought?
-** Yes :-)
+* So, has anyone else had this thought?
+** Yes!
 ** https://github.com/docker/docker-py/issues/109
 ** "Provide a Mock implementation"
+
+   Well they call it a "Mock" -- I'd call it a verified fake.
 
 * So let's make a start
 
@@ -33,10 +51,42 @@
 
 * IDockerClient
 
+  Start with the interface
+  Use ``zope.interface`` (ABCs ??)
+  It's just what I'm used to.
+
 * And a test to go with it.
+
+  And ``zope.interface`` provides tools that'll help me to verify that my implementations match the interface.
+  ``zope.interface.verify``
+  ``verifyObject``
+  ``verifyClass``
 
 * Skeleton / Boilerplate
 
+  So here's where we tend to start when doing this at ClusterHQ...
+
+  Start with the tests....TDD!
+
+  Our first test...in summary.
+
+```
++    def test_interface(self):
++        """
++        The implementation provides ``IDockerClient``.
++        """
++        self.assertTrue(verifyObject(IDockerClient, self.client))
+
+```
+
+  This test uses the ``zope.interface.verify`` verfiy tools to check that the
+  ``client`` (an instance) is a correct implementation of the interface.
+
+  Later we'll see exactly where and how these tests are defined...
+  So they can be run against the real and fake implementations of IDockerClient...
+  But for now, let's concentrate on the results...
+
+```
 (docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
 tests.integration_test
   RealDockerClientTests
@@ -44,7 +94,9 @@ tests.integration_test
 tests.test
   FakeDockerClientTests
     test_interface ...                                                  [ERROR]
+```
 
+```
 ===============================================================================
 [ERROR]
 Traceback (most recent call last):
@@ -58,14 +110,13 @@ Traceback (most recent call last):
     raise DoesNotImplement(iface)
 zope.interface.exceptions.DoesNotImplement: An object does not implement interface <InterfaceClass docker.client.IDockerClient>
 
-
-
 tests.integration_test.RealDockerClientTests.test_interface
 tests.test.FakeDockerClientTests.test_interface
 -------------------------------------------------------------------------------
 Ran 2 tests in 0.043s
 
 FAILED (errors=2)
+```
 
 * Easy enough to fix that
 
@@ -156,7 +207,7 @@ Traceback (most recent call last):
     raise BrokenImplementation(iface, name)
 zope.interface.exceptions.BrokenImplementation: An object has failed to implement interface <InterfaceClass docker.client.IDockerClient>
 
-	The containers attribute was not provided.
+        The containers attribute was not provided.
 
 
 tests.test.FakeDockerClientTests.test_interface
@@ -182,8 +233,8 @@ index 5e536f7..c622e0c 100644
 
  class IDockerClientTestsMixin(object):
 @@ -36,6 +38,13 @@ class IDockerClientTestsMixin(object):
-	 """
-	 self.assertTrue(verifyObject(IDockerClient, self.client))
+         """
+         self.assertTrue(verifyObject(IDockerClient, self.client))
 
 +    def test_containers_empty(self):
 +        """
