@@ -178,6 +178,33 @@ Ran 2 tests in 0.042s
 PASSED (successes=2)
 ```
 
+* A quick look at the test infrastructure.
+
+  A testtools module.
+  A public module, which can be easily imported by consumers,
+  not hidden beside the tests where it may not be importable
+  Tests defined in a test "mixin"
+  A TestCase factory...
+  a function that accepts an implementation factory...
+  a function that can be called to generate an instance of the implementation
+  returns a TestCase instance
+  whose tests will operate on the generated instance.
+  Build a ``TestCase`` subclass with a ``setUp`` method that calls the implementation factory.
+  Naming convention...``make_idockerclient_tests``
+  Signature convention...``make_idockerclient_tests(dockerclient_factory=...)``
+
+  And with that, we can build TestCase's for the real implementation
+  Which lives in `tests.functional`
+  And for the fake implementation which live in `tests`
+
+  And by defining a class that inherits from the dynamically generated TestCase,
+  We have a convenient place to add test documentation strings.
+
+* dockerclient_factory
+
+  This provides a convenient place to set up a real ``docker.Client`` that calls a real Docker daemon.
+  A place to set up ``docker.Client`` that interacts with a fake Docker daemon.
+  And a place to set up a ``FakeDockerClient`` configured so that it can be exercised by the tests.
 
 * And now we can start fleshing out the interface...
 
