@@ -118,8 +118,16 @@ Ran 2 tests in 0.043s
 FAILED (errors=2)
 ```
 
+* Failed!
+
+  But that was expected and...
+  it gives us somewhere to start
+
 * Easy enough to fix that
 
+  All we need to do is decorate the ``docker.Client`` class.
+
+```
 commit 0c4b71fef273e92afc75a2e29fb77c3348bc142e
 Author: Richard Wall <richard@the-moon.net>
 Date:   Sat Jul 11 14:12:13 2015 +0100
@@ -147,9 +155,15 @@ index 349dbb2..44d7dd5 100644
  class Client(clientbase.ClientBase):
      @check_resource
      def attach(self, container, stdout=True, stderr=True,
+```
+
+  Note, that we haven't really done anything yet and
+  that the interface doesn't accurately reflect the existing API.
+  But we've made a test pass and it gives a sense of progress.
 
 * Tests now pass
 
+```
 (docker-py)(fake-dockerclient-109 ?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
 tests.integration_test
   RealDockerClientTests
@@ -162,10 +176,18 @@ tests.test
 Ran 2 tests in 0.042s
 
 PASSED (successes=2)
+```
+
 
 * And now we can start fleshing out the interface...
 
+  So with the skeleton code in place and
+  a mechanism for running the tests against the real and fake implementations
+  we can start filling in the missing interface methods and
+  missing method arguments.
+
 * Start with ``containers``
+
 
 (docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
 diff --git a/docker/client.py b/docker/client.py
