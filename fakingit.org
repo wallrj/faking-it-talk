@@ -215,7 +215,7 @@ PASSED (successes=2)
 
 * Start with ``containers``
 
-
+```
 (docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
 diff --git a/docker/client.py b/docker/client.py
 index 44d7dd5..6f128db 100644
@@ -234,7 +234,9 @@ index 44d7dd5..6f128db 100644
 
 
  @implementer(IDockerClient)
-(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git commit -am "^C
+```
+
+```
 (docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
 tests.integration_test
   RealDockerClientTests
@@ -264,9 +266,11 @@ tests.test.FakeDockerClientTests.test_interface
 Ran 2 tests in 0.040s
 
 FAILED (errors=1, successes=1)
+```
 
 * And we'll start with a test for empty list of containers.
 
+```
 (docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
 diff --git a/docker/testtools.py b/docker/testtools.py
 index 5e536f7..c622e0c 100644
@@ -295,9 +299,11 @@ index 5e536f7..c622e0c 100644
 
  def make_idockerclient_tests(dockerclient_factory):
      """
+```
 
 * Hmm Docker API versions
 
+```
 (docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
 tests.integration_test
   RealDockerClientTests
@@ -328,10 +334,12 @@ tests.integration_test.RealDockerClientTests.test_containers_empty
 Ran 4 tests in 0.059s
 
 FAILED (errors=1, successes=3)
+```
 
 * Specify 'auto' to use the API version provided by the server.
 ** ok
 
+```
 (docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
 diff --git a/tests/integration_test.py b/tests/integration_test.py
 index c9d0f0c..60cde8e 100644
@@ -356,9 +364,15 @@ index c9d0f0c..60cde8e 100644
  ):
      """
      Tests for ``docker.Client`` adherence to ``IDockerClient``.
+```
+
+```
 (docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git commit -am "Automatically determine the docker server version"
 [fake-dockerclient-109 ba3b144] Automatically determine the docker server version
  1 file changed, 4 insertions(+), 1 deletion(-)
+```
+
+```
 (docker-py)(fake-dockerclient-109 ?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
 tests.integration_test
   RealDockerClientTests
@@ -373,6 +387,7 @@ tests.test
 Ran 4 tests in 0.079s
 
 PASSED (successes=4)
+```
 
 * What next?
 
