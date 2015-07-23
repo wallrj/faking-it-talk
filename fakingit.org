@@ -1,7 +1,7 @@
 #+TITLE: Faking It
-#+DATE: Thursday 23 July 2015 at 12.30
-#+AUTHOR: Testing With Verified Fakes
-#+EMAIL: Richard Wall (@wallrj) <richard.wall@clusterhq.com>
+#+DATE: Thursday 23 July 2015
+#+AUTHOR: Richard Wall (@wallrj)
+#+EMAIL: richard.wall@clusterhq.com
 #+REVEAL_THEME: night
 #+REVEAL_TRANS: linear
 #+REVEAL-SLIDE-NUMBER: t
