@@ -10,9 +10,9 @@
 
 * Introduction
 
-  * Problems
-  * Solution
-  * Questions
+  * Problems (5)
+  * Solution (10)
+  * Questions (5)
 
 * Problem 1: Proliferation of mocks
 
@@ -152,17 +152,37 @@
 
 * A "verified" fake
 
-** Provides the same interface
+  A class that:
 
-* Choose a library
-
-  While preparing for talk I went in search of examples of other people looking for verified fakes.
-  Something close to home.
-  Flocker calls the Docker API using ``docker-py``
+  * Provides the same interface.
+  * Passes the same tests.
+  * Ideally maintained alongside the real implementation.
 
 * docker-py
 
-  A Python wrapper around the Docker REST API.
+  #+BEGIN_NOTES
+  * Something close to home.
+  * Flocker calls the Docker API using ``docker-py``
+  * There are other differences too
+  * but not enough time to list them all here
+  * Anyone else looking for a docker-py fake?
+  #+END_NOTES
+
+* docker-py
+
+  #+BEGIN_QUOTE
+  Any usage of docker-py requires unit testing.
+  The latter requires a Fake client that does not require a docker daemon to be running.
+  Providing a mock implementation will avoid every single user to re-implement its own mock.
+  This is a nice to have.
+  #+END_QUOTE
+
+  https://github.com/docker/docker-py/issues/109
+
+  #+BEGIN_NOTES
+  * Great minds think alike!
+  * Nice-to-have?
+  #+END_NOTES
 
 * How do they test their API / interface?
 
