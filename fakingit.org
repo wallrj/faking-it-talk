@@ -184,13 +184,6 @@
   * Nice-to-have?
   #+END_NOTES
 
-* So, has anyone else had this thought?
-** Yes!
-** https://github.com/docker/docker-py/issues/109
-** "Provide a Mock implementation"
-
-   Well they call it a "Mock" -- I'd call it a verified fake.
-
 * So let's make a start
 
 * Where is the docker-py API defined?
