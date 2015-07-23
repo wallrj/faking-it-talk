@@ -253,111 +253,17 @@
   * ``zope.interface`` provides tools that'll help me to verify that my implementations match the interface.
   * ``verifyObject``
   * ``verifyClass``
+  * check that the ``client`` (an instance) is a correct implementation of the interface.
+  * Test mixin so they can be run against the real and fake implementations of IDockerClient...
+  * We'll look at how to use the mixin in a moment...
+  * But for now, let's concentrate on the results...
   #+END_NOTES
 
-* Skeleton / Boilerplate
+* And a test to go with it
 
-  So here's where we tend to start when doing this at ClusterHQ...
+  #+BEGIN_SRC sh
 
-  Start with the tests....TDD!
-
-  Our first test...in summary.
-
-```
-+    def test_interface(self):
-+        """
-+        The implementation provides ``IDockerClient``.
-+        """
-+        self.assertTrue(verifyObject(IDockerClient, self.client))
-
-```
-
-  This test uses the ``zope.interface.verify`` verfiy tools to check that the
-  ``client`` (an instance) is a correct implementation of the interface.
-
-  Later we'll see exactly where and how these tests are defined...
-  So they can be run against the real and fake implementations of IDockerClient...
-  But for now, let's concentrate on the results...
-
-```
-(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
-tests.integration_test
-  RealDockerClientTests
-    test_interface ...                                                  [ERROR]
-tests.test
-  FakeDockerClientTests
-    test_interface ...                                                  [ERROR]
-```
-
-```
-===============================================================================
-[ERROR]
-Traceback (most recent call last):
-  File "/usr/lib64/python2.7/unittest/case.py", line 367, in run
-    testMethod()
-  File "/home/richard/projects/docker-py/docker/testtools.py", line 35, in test_interface
-    self.assertTrue(verifyObject(IDockerClient, self.client))
-  File "/home/richard/.virtualenvs/docker-py/lib/python2.7/site-packages/zope/interface/verify.py", line 105, in verifyObject
-    return _verify(iface, candidate, tentative, vtype='o')
-  File "/home/richard/.virtualenvs/docker-py/lib/python2.7/site-packages/zope/interface/verify.py", line 50, in _verify
-    raise DoesNotImplement(iface)
-zope.interface.exceptions.DoesNotImplement: An object does not implement interface <InterfaceClass docker.client.IDockerClient>
-
-tests.integration_test.RealDockerClientTests.test_interface
-tests.test.FakeDockerClientTests.test_interface
--------------------------------------------------------------------------------
-Ran 2 tests in 0.043s
-
-FAILED (errors=2)
-```
-
-* Failed!
-
-  But that was expected and...
-  it gives us somewhere to start
-
-* Easy enough to fix that
-
-  All we need to do is decorate the ``docker.Client`` class.
-
-```
-commit 0c4b71fef273e92afc75a2e29fb77c3348bc142e
-Author: Richard Wall <richard@the-moon.net>
-Date:   Sat Jul 11 14:12:13 2015 +0100
-
-    Implement the new interface
-
-diff --git a/docker/client.py b/docker/client.py
-index 349dbb2..44d7dd5 100644
---- a/docker/client.py
-+++ b/docker/client.py
-@@ -20,7 +20,7 @@ from datetime import datetime
-
- import six
-
--from zope.interface import Interface
-+from zope.interface import Interface, implementer
-
- from . import clientbase
- from . import constants
-@@ -35,6 +35,7 @@ class IDockerClient(Interface):
-     """
-
-
-+@implementer(IDockerClient)
- class Client(clientbase.ClientBase):
-     @check_resource
-     def attach(self, container, stdout=True, stderr=True,
-```
-
-  Note, that we haven't really done anything yet and
-  that the interface doesn't accurately reflect the existing API.
-  But we've made a test pass and it gives a sense of progress.
-
-* Tests now pass
-
-```
-(docker-py)(fake-dockerclient-109 ?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
 tests.integration_test
   RealDockerClientTests
     test_interface ...                                                     [OK]
@@ -369,29 +275,93 @@ tests.test
 Ran 2 tests in 0.042s
 
 PASSED (successes=2)
-```
+  #+END_SRC
 
-* A quick look at the test infrastructure.
+  #+BEGIN_NOTES
+  * Test mixin so they can be run against the real and fake implementations of IDockerClient...
+  * So let's take a look at how we run the tests
+  * Against real and fake implementations of the interface.
+  #+END_NOTES
 
-  A testtools module.
-  A public module, which can be easily imported by consumers,
-  not hidden beside the tests where it may not be importable
-  Tests defined in a test "mixin"
-  A TestCase factory...
-  a function that accepts an implementation factory...
-  a function that can be called to generate an instance of the implementation
-  returns a TestCase instance
-  whose tests will operate on the generated instance.
-  Build a ``TestCase`` subclass with a ``setUp`` method that calls the implementation factory.
-  Naming convention...``make_idockerclient_tests``
-  Signature convention...``make_idockerclient_tests(dockerclient_factory=...)``
 
-  And with that, we can build TestCase's for the real implementation
-  Which lives in `tests.functional`
-  And for the fake implementation which live in `tests`
+* A public testtools module
 
-  And by defining a class that inherits from the dynamically generated TestCase,
-  We have a convenient place to add test documentation strings.
+  #+BEGIN_NOTES
+  * A public module, which can be easily imported by consumers,
+  * not hidden with the tests where it may not be packaged and
+  * May not be importable by consumers of the library.
+  * Contains the verified fake and the shared tests.
+  #+END_NOTES
+
+* A TestsMixin
+
+  #+BEGIN_NOTES
+  * Tests defined in a test "mixin"
+  #+END_NOTES
+
+* A TestCase factory
+
+  #+BEGIN_SRC python
+
+def make_idockerclient_tests(dockerclient_factory):
+    """
+    Return a ``TestCase`` with tests for verifying that
+    ``docker_client_factory`` adheres to ``IDockerClient``.
+    """
+    class Tests(IDockerClientTestsMixin, TestCase):
+        def setUp(self):
+            self.client = dockerclient_factory()
+
+    return Tests
+  #+END_SRC
+
+  #+BEGIN_NOTES
+  * a function that accepts an implementation factory...
+  * a function that can be called to generate an instance of the implementation
+  * returns a TestCase instance
+  * whose tests will operate on the generated instance.
+  * Build a ``TestCase`` subclass with a ``setUp`` method that calls the implementation factory.
+  * Naming convention...``make_idockerclient_tests``
+  * Signature convention...``make_idockerclient_tests(dockerclient_factory=...)``
+  #+END_NOTES
+
+* Putting it all together
+
+  #+BEGIN_SRC python
+class RealDockerClientTests(
+        make_idockerclient_tests(
+            dockerclient_factory=partial(docker.Client, version='auto')
+        )
+):
+    """
+    Tests for ``docker.Client`` adherence to ``IDockerClient``.
+    """
+  #+END_SRC
+
+  #+BEGIN_NOTES
+  * And with that, we can build TestCase's for the real implementation
+  * Which lives in `tests.functional`
+  #+END_NOTES
+
+
+* Putting it all together
+
+  #+BEGIN_SRC python
+class FakeDockerClientTests(
+        make_idockerclient_tests(dockerclient_factory=FakeDockerClient)
+):
+    """
+    Tests for ``FakeDockerClient``.
+    """
+
+  #+END_SRC
+
+  #+BEGIN_NOTES
+  * And for the fake implementation which live in `tests`
+  * And by defining a class that inherits from the dynamically generated TestCase,
+  * We have a convenient place to add test documentation strings.
+  #+END_NOTES
+
 
 * dockerclient_factory
 
@@ -399,12 +369,15 @@ PASSED (successes=2)
   A place to set up ``docker.Client`` that interacts with a fake Docker daemon.
   And a place to set up a ``FakeDockerClient`` configured so that it can be exercised by the tests.
 
+
 * And now we can start fleshing out the interface...
 
-  So with the skeleton code in place and
-  a mechanism for running the tests against the real and fake implementations
-  we can start filling in the missing interface methods and
-  missing method arguments.
+  #+BEGIN_NOTES
+  * So with the skeleton code in place and
+  * a mechanism for running the tests against the real and fake implementations
+  * we can start filling in the missing interface methods and
+  * missing method arguments.
+  #+END_NOTES
 
 * Start with ``containers``
 
