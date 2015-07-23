@@ -14,7 +14,7 @@
   * Solution
   * Questions
 
-* Problem
+* Problem 1: Proliferation of mocks
 
   #+BEGIN_QUOTE
   Everyone made their own mock objects.
@@ -29,7 +29,55 @@
   * Augie Fackler
   * Nathaniel Manista
   * Ned Batchelder
+  * Examples?
   #+END_NOTES
+
+** Twisted (for example)
+
+  #+BEGIN_SRC sh
+  $ egrep --no-filename --only-matching --recursive 'class Fake[^(:]+' * \
+    | sort \
+    | uniq -c
+    | sort -n
+  #+END_SRC
+
+  #+BEGIN_NOTES
+  * Let's pick on Twisted
+  #+END_NOTES
+
+** Twisted (for example)
+  #+BEGIN_SRC sh
+  ...
+      2 class FakeScheduler
+      2 class FakeSentence
+      2 class FakeSocket
+      2 class FakeStdio
+      2 class FakeWarning
+      3 class FakeService
+      4 class FakeFile
+      5 class FakeResolver
+      5 class FakeStream
+      5 class FakeTransport
+      6 class FakeReactor
+      7 class FakeProtocol
+  #+END_SRC
+
+  #+BEGIN_NOTES
+  * Doesn't show the paths
+  * Duplicate Fakes in the same file!
+  * ...But this may not be fair.
+  #+END_NOTES
+
+* Problem 2: Inaccurate mocks
+
+** Examples:
+
+  #+BEGIN_NOTES
+  * Partial API
+  * Method signature differences
+  * OpenStack
+  #+END_NOTES
+
 
 * Choose a library
 
