@@ -10,7 +10,26 @@
 
 * Introduction
 
-  *
+  * Problems
+  * Solution
+  * Questions
+
+* Problem
+
+  #+BEGIN_QUOTE
+  Everyone made their own mock objects.
+  We had N different implementations of a mock.
+  When the real code changed, you have to find all N mocks and update them.
+  #+END_QUOTE
+
+  http://pyvideo.org/video/629/stop-mocking-start-testing
+
+  #+BEGIN_NOTES
+  * PyCon 2012
+  * Augie Fackler
+  * Nathaniel Manista
+  * Ned Batchelder
+  #+END_NOTES
 
 * Choose a library
 
