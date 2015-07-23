@@ -11,7 +11,7 @@
 * Introduction
 
   * Problems (5)
-  * Solution (10)
+  * Solution (15)
   * Questions (5)
 
 * Problem 1: Proliferation of mocks
@@ -23,6 +23,7 @@
   #+END_QUOTE
 
   http://pyvideo.org/video/629/stop-mocking-start-testing
+  http://nedbatchelder.com/blog/201206/tldw_stop_mocking_start_testing.html
 
   #+BEGIN_NOTES
   * PyCon 2012
@@ -470,18 +471,22 @@ PASSED (successes=15)
 ** Implement both together.
 **
 
-* Case Study
+* Further Reading
 
-* IDockerClientAPI
+** IBlockDeviceAPI
 
-* IBlockDeviceAPI
+   https://github.com/ClusterHQ/flocker/
 
-*
+** Mimic
+
+   https://github.com/rackerlabs/mimic
+
+** Separate your fakes and your inspectors
+
+   https://glyph.twistedmatrix.com/2015/05/separate-your-fakes-and-your-inspectors.html
 
 * Summary
 
 * Questions?
-
-* Thanks and links
   * Richard Wall: https://github.com/wallrj
   * ClusterHQ: https://github.com/ClusterHQ
