@@ -70,14 +70,89 @@
 
 * Problem 2: Inaccurate mocks
 
-** Examples:
+** Nova Docker (for example)
+
+   https://github.com/stackforge/nova-docker
 
   #+BEGIN_NOTES
-  * Partial API
-  * Method signature differences
-  * OpenStack
+  * An OpenStack Nova driver
+  * Manages Docker containers as Nova instances.
+  * Haven't used it...yet.
   #+END_NOTES
 
+
+** Nova Docker (for example)
+
+  #+BEGIN_SRC python
+  In [2]: from novadocker.tests.virt.docker.mock_client import MockClient
+  In [11]: from docker.client import Client
+
+  In [13]: real_client = Client()
+  In [14]: fake_client = MockClient()
+  #+END_SRC
+
+  #+BEGIN_NOTES
+  * docker-py -- a Python wrapper around the Docker REST API.
+  * Let's compare the behaviour of real and the fake clients.
+  * Again it may be an unfair comparison.
+  * I haven't checked with the authors
+  #+END_NOTES
+
+
+** Nova Docker (for example)
+
+  #+BEGIN_SRC python
+  In [16]: real_client.create_container(image='busybox:latest')
+  Out[16]:
+  {u'Id': u'db9d42e52e7a4a53b7d82bd38c1d06af2cc65a32f8d73747dff6783d4ba3c886',
+   u'Warnings': None}
+  #+END_SRC
+
+  #+BEGIN_NOTES
+  * dictionary containing
+  * 64 byte hex encoded string
+  #+END_NOTES
+
+
+** Nova Docker (for example)
+
+  #+BEGIN_SRC python
+    In [17]: fake_client.create_container(image='busybox:latest')
+    ---------------------------------------------------------------------------
+    TypeError                                 Traceback (most recent call last)
+    <ipython-input-17-c0ea284cb1d5> in <module>()
+    ----> 1 fake_client.create_container(image='busybox:latest')
+
+    /home/richard/projects/nova-docker/novadocker/virt/docker/client.pyc in wrapper(*args, **kwds)
+         34     @functools.wraps(f, assigned=[])
+         35     def wrapper(*args, **kwds):
+    ---> 36         out = f(*args, **kwds)
+         37
+         38         def _filter(obj):
+
+    TypeError: create_container() takes exactly 2 arguments (1 given)
+  #+END_SRC
+
+  #+BEGIN_NOTES
+  * Method signature differences
+  * `image` is required,
+  * but in the fake it's called `image_name`
+  #+END_NOTES
+
+** Nova Docker (for example)
+
+  #+BEGIN_NOTES
+  * There are other differences too
+  * but not enough time to list them all here
+  #+END_NOTES
+
+** Can we do better?
+
+* Solution
+
+* A "verified" fake
+
+** Provides the same interface
 
 * Choose a library
 
