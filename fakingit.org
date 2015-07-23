@@ -420,12 +420,49 @@ PASSED (successes=4)
 
 * Test, write code, refactor, repeat
 
+  #+BEGIN_NOTES
+  *
+  #+END_NOTES
+
+* Results
+
+  #+BEGIN_SRC sh
+  $ trial tests.test.FakeDockerClientTests tests.integration_test.RealDockerClientTeststests.test
+  FakeDockerClientTests
+    test_containers_empty ...                                              [OK]
+    test_containers_empty_all ...                                          [OK]
+    test_containers_quiet_all ...                                          [OK]
+    test_created_is_listed ...                                             [OK]
+    test_inspect_container ...                                             [OK]
+    test_inspect_unknown_container ...                                     [OK]
+    test_interface ...                                                     [OK]
+    test_remove_container ...                                              [OK]
+    test_remove_unknown_container ...                                      [OK]
+tests.integration_test
+  RealDockerClientTests
+    test_created_is_listed ...                                             [OK]
+    test_inspect_container ...                                             [OK]
+    test_inspect_unknown_container ...                                     [OK]
+    test_interface ...                                                     [OK]
+    test_remove_container ...                                              [OK]
+    test_remove_unknown_container ...                                      [OK]
+
+-------------------------------------------------------------------------------
+Ran 15 tests in 0.409s
+
+PASSED (successes=15)
+  #+END_SRC
+
 * create_container
-** Creates a container but doesn't start it.
-** Our ``containers`` API currently only returns running containers, so we'll need to modify it a little.
-** We can implement a test that creates both of these behaviours.
-** Creates and lists the newly created container.
-** ``docker.Client.create_container`` and ``containers`` have masses of arguments (too many??) but we'll start with the bare minimum; add only what we need to the interface.
+
+  #+BEGIN_NOTES
+  * Creates a container but doesn't start it.
+  * Demonstrated in earlier example
+  * Our ``containers`` API currently only returns running containers, so we'll need to modify it a little.
+  * We can implement a test that creates both of these behaviours.
+  * Creates and lists the newly created container.
+  * ``docker.Client.create_container`` and ``containers`` have masses of arguments (too many??) but we'll start with the bare minimum; add only what we need to the interface.
+  #+END_NOTES
 
 * Chicken-and-egg
 ** Can't test ``create_container`` until we've got a ``containers`` API that lists both running and non-running containers
