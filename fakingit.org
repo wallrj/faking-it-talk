@@ -363,12 +363,6 @@ class FakeDockerClientTests(
   * We have a convenient place to add test documentation strings.
   #+END_NOTES
 
-* Putting it all together
-
-
-  #+BEGIN_NOTES
-  #+END_NOTES
-
 * And now we can start fleshing out the interface
 
   #+BEGIN_NOTES
@@ -387,7 +381,7 @@ class FakeDockerClientTests(
         running containers.
         """
         self.assertEqual([], self.client.containers())
-    """
+        """
   #+END_SRC
 
 * Starting with a test for empty list of containers.
@@ -422,7 +416,8 @@ PASSED (successes=4)
 * Test, write code, refactor, repeat
 
   #+BEGIN_NOTES
-  *
+  * Create the real and fake API in lock step.
+  * Or start with a bare bones fake API and then write the real implementation.
   #+END_NOTES
 
 * Results
@@ -454,22 +449,29 @@ Ran 15 tests in 0.409s
 PASSED (successes=15)
   #+END_SRC
 
-* create_container
+* Complications
 
-  #+BEGIN_NOTES
-  * Creates a container but doesn't start it.
-  * Demonstrated in earlier example
-  * Our ``containers`` API currently only returns running containers, so we'll need to modify it a little.
-  * We can implement a test that creates both of these behaviours.
-  * Creates and lists the newly created container.
-  * ``docker.Client.create_container`` and ``containers`` have masses of arguments (too many??) but we'll start with the bare minimum; add only what we need to the interface.
-  #+END_NOTES
+** Chicken-and-egg
 
-* Chicken-and-egg
-** Can't test ``create_container`` until we've got a ``containers`` API that lists both running and non-running containers
-** Can't easily / generally test ``containers(all=True)`` until we've implemented ``create_container``
-** Implement both together.
-**
+   * Can't test ``create_container`` until we've got a way to list ``containers``
+   * Can't test list ``containers`` until we've got a way to ``create_container``
+   * Implement both together.
+
+   #+BEGIN_NOTES
+   * Creates a container but doesn't start it.
+   * Demonstrated in earlier example
+   * Our ``containers`` API currently only returns running containers, so we'll need to modify it a little.
+   * We can implement a test that creates both of these behaviours.
+   * Creates and lists the newly created container.
+   * ``docker.Client.create_container`` and ``containers`` have masses of arguments (too many??) but we'll start with the bare minimum; add only what we need to the interface.
+   #+END_NOTES
+
+** Chicken-and-egg
+
+   * Can't clean up the test containers until we've implemented ``remove_container``.
+   * Can't test ``remove_container`` until we've implemented ``create_container`` and list ``containers``.
+
+** Test public APIs not implementation details
 
 * Further Reading
 
@@ -477,15 +479,53 @@ PASSED (successes=15)
 
    https://github.com/ClusterHQ/flocker/
 
+   #+BEGIN_NOTES
+   * Flocker Block device backend
+   * Simulate virtual block devices
+   * AWS EBS
+   * OpenStack Cinder
+   * A loopback device implementation
+   #+END_NOTES
+
+
 ** Mimic
 
    https://github.com/rackerlabs/mimic
+
+   #+BEGIN_NOTES
+   * Not quite what I've described here
+   * Simulates the OpenStack Nova REST API
+   * Can be primed with various success and error responses.
+   * Tracks the state of a Nova REST session
+   * Even the authentication.
+   #+END_NOTES
+
+
+** Eliot
+
+   https://github.com/ClusterHQ/eliot/
+
+   #+BEGIN_NOTES
+   * Structured logging library
+   * MemoryLogger
+   * Implements ILogger
+   * validateLogging
+   * assertHasAction
+   #+END_NOTES
 
 ** Separate your fakes and your inspectors
 
    https://glyph.twistedmatrix.com/2015/05/separate-your-fakes-and-your-inspectors.html
 
 * Summary
+
+  #+BEGIN_NOTES
+  * Some of the problems with un-verified fakes and mocks.
+  * Some examples of those problems
+  * An example of writing a verified fake for an existing library
+  * And the problems associated with that.
+  * Other examples of verified fakes written in Python.
+  #+END_NOTES
 
 * Questions?
   * Richard Wall: https://github.com/wallrj
