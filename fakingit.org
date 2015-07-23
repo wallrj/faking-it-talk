@@ -189,7 +189,7 @@
 * Where is the docker-py API defined?
 
   * Is it formally defined?
-  * Look at the API documentation....
+  * Look at the API documentation.
 
 * API Docs
 
@@ -362,15 +362,13 @@ class FakeDockerClientTests(
   * We have a convenient place to add test documentation strings.
   #+END_NOTES
 
-
-* dockerclient_factory
-
-  This provides a convenient place to set up a real ``docker.Client`` that calls a real Docker daemon.
-  A place to set up ``docker.Client`` that interacts with a fake Docker daemon.
-  And a place to set up a ``FakeDockerClient`` configured so that it can be exercised by the tests.
+* Putting it all together
 
 
-* And now we can start fleshing out the interface...
+  #+BEGIN_NOTES
+  #+END_NOTES
+
+* And now we can start fleshing out the interface
 
   #+BEGIN_NOTES
   * So with the skeleton code in place and
@@ -379,93 +377,38 @@ class FakeDockerClientTests(
   * missing method arguments.
   #+END_NOTES
 
-* Start with ``containers``
+* Starting with a test for empty list of containers.
 
-```
-(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
-diff --git a/docker/client.py b/docker/client.py
-index 44d7dd5..6f128db 100644
---- a/docker/client.py
-+++ b/docker/client.py
-@@ -33,6 +33,12 @@ class IDockerClient(Interface):
-     """
-     Create, delete and list docker containers.
-     """
-+    def containers():
-+        """
-+        List containers. Identical to the ``docker ps`` command.
-+
-+        https://docker-py.readthedocs.org/en/latest/api/#containers
-+        """
+  #+BEGIN_SRC python
+    def test_containers_empty(self):
+        """
+        ``IDockerContainers.containers`` returns an empty list if there are no
+        running containers.
+        """
+        self.assertEqual([], self.client.containers())
+    """
+  #+END_SRC
 
+* Starting with a test for empty list of containers.
+  #+BEGIN_SRC sh
 
- @implementer(IDockerClient)
-```
-
-```
-(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
 tests.integration_test
   RealDockerClientTests
+    test_containers_empty ...                                              [OK]
     test_interface ...                                                     [OK]
 tests.test
   FakeDockerClientTests
-    test_interface ...                                                  [ERROR]
+    test_containers_empty ...                                              [OK]
+    test_interface ...                                                     [OK]
 
-===============================================================================
-[ERROR]
-Traceback (most recent call last):
-  File "/usr/lib64/python2.7/unittest/case.py", line 367, in run
-    testMethod()
-  File "/home/richard/projects/docker-py/docker/testtools.py", line 37, in test_interface
-    self.assertTrue(verifyObject(IDockerClient, self.client))
-  File "/home/richard/.virtualenvs/docker-py/lib/python2.7/site-packages/zope/interface/verify.py", line 105, in verifyObject
-    return _verify(iface, candidate, tentative, vtype='o')
-  File "/home/richard/.virtualenvs/docker-py/lib/python2.7/site-packages/zope/interface/verify.py", line 62, in _verify
-    raise BrokenImplementation(iface, name)
-zope.interface.exceptions.BrokenImplementation: An object has failed to implement interface <InterfaceClass docker.client.IDockerClient>
-
-        The containers attribute was not provided.
-
-
-tests.test.FakeDockerClientTests.test_interface
 -------------------------------------------------------------------------------
-Ran 2 tests in 0.040s
+Ran 4 tests in 0.079s
 
-FAILED (errors=1, successes=1)
-```
+PASSED (successes=4)
 
-* And we'll start with a test for empty list of containers.
+  #+END_SRC
 
-```
-(docker-py)(fake-dockerclient-109 ✕?)[~/projects/docker-py]$ git diff
-diff --git a/docker/testtools.py b/docker/testtools.py
-index 5e536f7..c622e0c 100644
---- a/docker/testtools.py
-+++ b/docker/testtools.py
-@@ -24,6 +24,8 @@ class FakeDockerClient(object):
-     """
-     An in-memory implementation of ``IDockerClient``.
-     """
-+    def containers(self):
-+        return []
-
-
- class IDockerClientTestsMixin(object):
-@@ -36,6 +38,13 @@ class IDockerClientTestsMixin(object):
-         """
-         self.assertTrue(verifyObject(IDockerClient, self.client))
-
-+    def test_containers_empty(self):
-+        """
-+        ``IDockerContainers.containers`` returns an empty list if there are no
-+        running containers.
-+        """
-+        self.assertEqual([], self.client.containers())
-+
-
- def make_idockerclient_tests(dockerclient_factory):
-     """
-```
 
 * Hmm Docker API versions
 
@@ -538,22 +481,6 @@ index c9d0f0c..60cde8e 100644
  1 file changed, 4 insertions(+), 1 deletion(-)
 ```
 
-```
-(docker-py)(fake-dockerclient-109 ?)[~/projects/docker-py]$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
-tests.integration_test
-  RealDockerClientTests
-    test_containers_empty ...                                              [OK]
-    test_interface ...                                                     [OK]
-tests.test
-  FakeDockerClientTests
-    test_containers_empty ...                                              [OK]
-    test_interface ...                                                     [OK]
-
--------------------------------------------------------------------------------
-Ran 4 tests in 0.079s
-
-PASSED (successes=4)
-```
 
 * What next?
 
