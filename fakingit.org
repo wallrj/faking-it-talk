@@ -1,10 +1,15 @@
 #+TITLE: Faking It
+#+DESCRIPTION: The Art of Testing Using Verified Fakes
+#+KEYWORDS: Best Practice, Testing, AWS, tdd, api, linux, OpenStack, docker, cloud
 #+DATE: Thursday 23 July 2015
 #+AUTHOR: Richard Wall (@wallrj)
 #+EMAIL: richard.wall@clusterhq.com
 #+REVEAL_THEME: night
 #+REVEAL_TRANS: linear
+#+REVEAL_ROOT: http://cdn.jsdelivr.net/reveal.js/3.0.0/
 #+REVEAL-SLIDE-NUMBER: t
+#+REVEAL_SLIDE_HEADER:
+#+REVEAL_SLIDE_FOOTER:
 #+OPTIONS: timestamp:nil author:nil num:nil toc:nil reveal_rolling_links:nil
 #+OPTIONS: reveal_history:t
 
