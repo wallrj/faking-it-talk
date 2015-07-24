@@ -1,0 +1,938 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Faking It</title>
+<meta name="author" content="(Richard Wall (@wallrj))"/>
+<meta name="description" content="The Art of Testing Using Verified Fakes"/>
+<meta name="keywords" content="Best Practice, Testing, AWS, tdd, api, linux, OpenStack, docker, cloud"/>
+
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/reveal.js/3.0.0/css/reveal.css"/>
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/reveal.js/3.0.0/css/theme/night.css" id="theme"/>
+<link rel="stylesheet" href=""/>
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'http://cdn.jsdelivr.net/reveal.js/3.0.0/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide">
+<h1>Faking It</h1>
+<h2>Richard Wall (@wallrj)</h2>
+<h2><a href="mailto:richard.wall@clusterhq.com">richard.wall@clusterhq.com</a></h2>
+<h2>Thursday 23 July 2015</h2>
+</section>
+
+<section>
+<section id="slide-orgheadline1">
+<div class="slide-header"></div>
+<h2 id="orgheadline1">Introduction</h2>
+<ul>
+<li>Problems (5)</li>
+<li>Solution (15)</li>
+<li>Questions (5)</li>
+
+</ul>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline4">
+<div class="slide-header"></div>
+<h2 id="orgheadline4">Problem 1: Proliferation of mocks</h2>
+<blockquote nil>
+<p>
+Everyone made their own mock objects.
+We had N different implementations of a mock.
+When the real code changed, you have to find all N mocks and update them.
+</p>
+</blockquote>
+
+<p>
+<a href="http://pyvideo.org/video/629/stop-mocking-start-testing">http://pyvideo.org/video/629/stop-mocking-start-testing</a>
+<a href="http://nedbatchelder.com/blog/201206/tldw_stop_mocking_start_testing.html">http://nedbatchelder.com/blog/201206/tldw_stop_mocking_start_testing.html</a>
+</p>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>PyCon 2012</li>
+<li>Augie Fackler</li>
+<li>Nathaniel Manista</li>
+<li>Ned Batchelder</li>
+<li>Examples?</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline2">
+<div class="slide-header"></div>
+<h3 id="orgheadline2">Twisted (for example)</h3>
+<div class="org-src-container">
+
+<pre  class="src src-sh">$ egrep --no-filename --only-matching --recursive <span style="color: #bdb76b;">'class Fake[^(:]+'</span> * <span style="color: #bdb76b;">\</span>
+  | sort <span style="color: #bdb76b;">\</span>
+  | uniq -c
+  | sort -n
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Let's pick on Twisted</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline3">
+<div class="slide-header"></div>
+<h3 id="orgheadline3">Twisted (for example)</h3>
+<div class="org-src-container">
+
+<pre  class="src src-sh">...
+    2 class FakeScheduler
+    2 class FakeSentence
+    2 class FakeSocket
+    2 class FakeStdio
+    2 class FakeWarning
+    3 class FakeService
+    4 class FakeFile
+    5 class FakeResolver
+    5 class FakeStream
+    5 class FakeTransport
+    6 class FakeReactor
+    7 class FakeProtocol
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Doesn't show the paths</li>
+<li>Duplicate Fakes in the same file!</li>
+<li>&#x2026;But this may not be fair.</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline11">
+<div class="slide-header"></div>
+<h2 id="orgheadline11">Problem 2: Inaccurate mocks</h2>
+<div class="outline-text-2" id="text-orgheadline11">
+</div><div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline5">
+<div class="slide-header"></div>
+<h3 id="orgheadline5">Nova Docker (for example)</h3>
+<p>
+<a href="https://github.com/stackforge/nova-docker">https://github.com/stackforge/nova-docker</a>
+</p>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>An OpenStack Nova driver</li>
+<li>Manages Docker containers as Nova instances.</li>
+<li>Haven't used it&#x2026;yet.</li>
+</ul>
+
+</aside>
+
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline6">
+<div class="slide-header"></div>
+<h3 id="orgheadline6">Nova Docker (for example)</h3>
+<div class="org-src-container">
+
+<pre  class="src src-python">In [2]: <span style="color: #ffffff;">from</span> novadocker.tests.virt.docker.mock_client <span style="color: #ffffff;">import</span> MockClient
+In [11]: <span style="color: #ffffff;">from</span> docker.client <span style="color: #ffffff;">import</span> Client
+
+In [13]: <span style="color: #9acd32;">real_client</span> = Client()
+In [14]: <span style="color: #9acd32;">fake_client</span> = MockClient()
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>docker-py &#x2013; a Python wrapper around the Docker REST API.</li>
+<li>Let's compare the behaviour of real and the fake clients.</li>
+<li>Again it may be an unfair comparison.</li>
+<li>I haven't checked with the authors</li>
+</ul>
+
+</aside>
+
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline7">
+<div class="slide-header"></div>
+<h3 id="orgheadline7">Nova Docker (for example)</h3>
+<div class="org-src-container">
+
+<pre  class="src src-python">In [16]: real_client.create_container(image=<span style="color: #bdb76b;">'busybox:latest'</span>)
+Out[16]:
+{u<span style="color: #bdb76b;">'Id'</span>: u<span style="color: #bdb76b;">'db9d42e52e7a4a53b7d82bd38c1d06af2cc65a32f8d73747dff6783d4ba3c886'</span>,
+<span style="background-color: #1a1a1a;"> </span>u<span style="color: #bdb76b;">'Warnings'</span>: <span style="color: #40e0d0;">None</span>}
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>dictionary containing</li>
+<li>64 byte hex encoded string</li>
+</ul>
+
+</aside>
+
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline8">
+<div class="slide-header"></div>
+<h3 id="orgheadline8">Nova Docker (for example)</h3>
+<div class="org-src-container">
+
+<pre  class="src src-python">In [17]: fake_client.create_container(image=<span style="color: #bdb76b;">'busybox:latest'</span>)
+---------------------------------------------------------------------------
+<span style="color: #7fffd4;">TypeError</span>                                 Traceback (most recent call last)
+&lt;ipython-<span style="color: #b0c4de;">input</span>-17-c0ea284cb1d5&gt; <span style="color: #ffffff;">in</span> &lt;module&gt;()
+----&gt; 1 fake_client.create_container(image=<span style="color: #bdb76b;">'busybox:latest'</span>)
+
+/home/richard/projects/nova-docker/novadocker/virt/docker/client.pyc <span style="color: #ffffff;">in</span> wrapper(*args, **kwds)
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>34     @functools.wraps(f, assigned=[])
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>35     <span style="color: #ffffff;">def</span> <span style="color: #98fb98;">wrapper</span>(*args, **kwds):
+---&gt; 36         <span style="color: #9acd32;">out</span> = f(*args, **kwds)
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>37
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>38         <span style="color: #ffffff;">def</span> <span style="color: #98fb98;">_filter</span>(obj):
+
+<span style="color: #7fffd4;">TypeError</span>: create_container() takes exactly 2 arguments (1 given)
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Method signature differences</li>
+<li>`image` is required,</li>
+<li>but in the fake it's called `image<sub>name</sub>`</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline9">
+<div class="slide-header"></div>
+<h3 id="orgheadline9">Nova Docker (for example)</h3>
+<aside class="notes">
+<ul class="org-ul">
+<li>There are other differences too</li>
+<li>but not enough time to list them all here</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline10">
+<div class="slide-header"></div>
+<h3 id="orgheadline10">Can we do better?</h3>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline12">
+<div class="slide-header"></div>
+<h2 id="orgheadline12">Solution</h2>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline13">
+<div class="slide-header"></div>
+<h2 id="orgheadline13">A "verified" fake</h2>
+<p>
+A class that:
+</p>
+
+<ul>
+<li>Provides the same interface.</li>
+<li>Passes the same tests.</li>
+<li>Ideally maintained alongside the real implementation.</li>
+
+</ul>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline14">
+<div class="slide-header"></div>
+<h2 id="orgheadline14">docker-py</h2>
+<aside class="notes">
+<ul class="org-ul">
+<li>Something close to home.</li>
+<li>Flocker calls the Docker API using ``docker-py``</li>
+<li>There are other differences too</li>
+<li>but not enough time to list them all here</li>
+<li>Anyone else looking for a docker-py fake?</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline15">
+<div class="slide-header"></div>
+<h2 id="orgheadline15">docker-py</h2>
+<blockquote nil>
+<p>
+Any usage of docker-py requires unit testing.
+The latter requires a Fake client that does not require a docker daemon to be running.
+Providing a mock implementation will avoid every single user to re-implement its own mock.
+This is a nice to have.
+</p>
+</blockquote>
+
+<p>
+<a href="https://github.com/docker/docker-py/issues/109">https://github.com/docker/docker-py/issues/109</a>
+</p>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Great minds think alike!</li>
+<li>Nice-to-have?</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline16">
+<div class="slide-header"></div>
+<h2 id="orgheadline16">So let's make a start</h2>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline17">
+<div class="slide-header"></div>
+<h2 id="orgheadline17">Where is the docker-py API defined?</h2>
+<ul>
+<li>Is it formally defined?</li>
+<li>Look at the API documentation.</li>
+
+</ul>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline18">
+<div class="slide-header"></div>
+<h2 id="orgheadline18">API Docs</h2>
+<p>
+<a href="https://docker-py.readthedocs.org/en/stable/api/">https://docker-py.readthedocs.org/en/stable/api/</a>
+</p>
+
+<p>
+docs/api.md
+</p>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Manually synchronised with the actual API</li>
+<li>I guess?</li>
+<li>Perhaps we can improve that.</li>
+<li>Start with an interface&#x2026;</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline19">
+<div class="slide-header"></div>
+<h2 id="orgheadline19">IDockerClient</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #ffffff;">from</span> zope.interface <span style="color: #ffffff;">import</span> Interface
+
+<span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">IDockerClient</span>(Interface):
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   Create, delete and list docker containers.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   """</span>
+
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">def</span> <span style="color: #98fb98;">create_container</span>(image, name=<span style="color: #40e0d0;">None</span>):
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   Creates a container that can then be ``.start()`` ed. Parameters are</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   similar to those for the docker run command except it doesn't support</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   the attach options (-a).</span>
+
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   http://docker-py.readthedocs.org/en/latest/api/#create_container</span>
+
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   :param str image: The image to run.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   :param str name: A name for the container.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   :returns:  A ``dict`` with an image 'Id' key and a 'Warnings' key.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   """</span>
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Start by defining an interface.</li>
+<li>Zope is my preference.</li>
+<li>There may be other options</li>
+<li>Discuss at the end</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline20">
+<div class="slide-header"></div>
+<h2 id="orgheadline20">And a test to go with it.</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">IDockerClientTestsMixin</span>(<span style="color: #b0c4de;">object</span>):
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   Tests for ``IDockerClient``.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   """</span>
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">def</span> <span style="color: #98fb98;">test_interface</span>(<span style="color: #ffffff;">self</span>):
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   The implementation provides ``IDockerClient``.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   </span><span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   """</span>
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">self</span>.assertTrue(verifyObject(IDockerClient, <span style="color: #ffffff;">self</span>.client))
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>``zope.interface`` provides tools that'll help me to verify that my implementations match the interface.</li>
+<li>``verifyObject``</li>
+<li>``verifyClass``</li>
+<li>check that the ``client`` (an instance) is a correct implementation of the interface.</li>
+<li>Test mixin so they can be run against the real and fake implementations of IDockerClient&#x2026;</li>
+<li>We'll look at how to use the mixin in a moment&#x2026;</li>
+<li>But for now, let's concentrate on the results&#x2026;</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline21">
+<div class="slide-header"></div>
+<h2 id="orgheadline21">And a test to go with it</h2>
+<div class="org-src-container">
+
+<pre  class="src src-sh">$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+tests.integration_test
+  RealDockerClientTests
+    test_interface ...                                                     [OK]
+tests.test
+  FakeDockerClientTests
+    test_interface ...                                                     [OK]
+
+-------------------------------------------------------------------------------
+Ran 2 tests<span style="color: #ffffff;"> in</span> 0.042s
+
+<span style="color: #98fb98;">PASSED</span> (<span style="color: #9acd32;">successes</span>=2)
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Test mixin so they can be run against the real and fake implementations of IDockerClient&#x2026;</li>
+<li>So let's take a look at how we run the tests</li>
+<li>Against real and fake implementations of the interface.</li>
+</ul>
+
+</aside>
+
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline22">
+<div class="slide-header"></div>
+<h2 id="orgheadline22">A public testtools module</h2>
+<aside class="notes">
+<ul class="org-ul">
+<li>A public module, which can be easily imported by consumers,</li>
+<li>not hidden with the tests where it may not be packaged and</li>
+<li>May not be importable by consumers of the library.</li>
+<li>Contains the verified fake and the shared tests.</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline23">
+<div class="slide-header"></div>
+<h2 id="orgheadline23">A TestsMixin</h2>
+<aside class="notes">
+<ul class="org-ul">
+<li>Tests defined in a test "mixin"</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline24">
+<div class="slide-header"></div>
+<h2 id="orgheadline24">A TestCase factory</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #ffffff;">def</span> <span style="color: #98fb98;">make_idockerclient_tests</span>(dockerclient_factory):
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   Return a ``TestCase`` with tests for verifying that</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   ``docker_client_factory`` adheres to ``IDockerClient``.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   """</span>
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">Tests</span>(IDockerClientTestsMixin, TestCase):
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">def</span> <span style="color: #98fb98;">setUp</span>(<span style="color: #ffffff;">self</span>):
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">self</span>.client = dockerclient_factory()
+
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">return</span> Tests
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>a function that accepts an implementation factory&#x2026;</li>
+<li>a function that can be called to generate an instance of the implementation</li>
+<li>returns a TestCase instance</li>
+<li>whose tests will operate on the generated instance.</li>
+<li>Build a ``TestCase`` subclass with a ``setUp`` method that calls the implementation factory.</li>
+<li>Naming convention&#x2026;``make<sub>idockerclient</sub><sub>tests</sub>``</li>
+<li>Signature convention&#x2026;``make<sub>idockerclient</sub><sub>tests</sub>(dockerclient<sub>factory</sub>=&#x2026;)``</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline25">
+<div class="slide-header"></div>
+<h2 id="orgheadline25">Putting it all together</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">RealDockerClientTests</span>(
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   make_idockerclient_tests(
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   dockerclient_factory=partial(docker.Client, version=<span style="color: #bdb76b;">'auto'</span>)
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   )
+):
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   Tests for ``docker.Client`` adherence to ``IDockerClient``.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   """</span>
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>And with that, we can build TestCase's for the real implementation</li>
+<li>Which lives in `tests.functional`</li>
+</ul>
+
+</aside>
+
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline26">
+<div class="slide-header"></div>
+<h2 id="orgheadline26">Putting it all together</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #ffffff;">class</span> <span style="color: #7fffd4;">FakeDockerClientTests</span>(
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   make_idockerclient_tests(dockerclient_factory=FakeDockerClient)
+):
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   Tests for ``FakeDockerClient``.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   """</span>
+</pre>
+</div>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>And for the fake implementation which live in `tests`</li>
+<li>And by defining a class that inherits from the dynamically generated TestCase,</li>
+<li>We have a convenient place to add test documentation strings.</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline27">
+<div class="slide-header"></div>
+<h2 id="orgheadline27">And now we can start fleshing out the interface</h2>
+<aside class="notes">
+<ul class="org-ul">
+<li>So with the skeleton code in place and</li>
+<li>a mechanism for running the tests against the real and fake implementations</li>
+<li>we can start filling in the missing interface methods and</li>
+<li>missing method arguments.</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline28">
+<div class="slide-header"></div>
+<h2 id="orgheadline28">Starting with a test for empty list of containers.</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #ffffff;">def</span> <span style="color: #98fb98;">test_containers_empty</span>(<span style="color: #ffffff;">self</span>):
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   ``IDockerContainers.containers`` returns an empty list if there are no</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   running containers.</span>
+<span style="color: #bdb76b; background-color: #1a1a1a;"> </span><span style="color: #bdb76b;">   """</span>
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">self</span>.assertEqual([], <span style="color: #ffffff;">self</span>.client.containers())
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #bdb76b;">"""</span>
+</pre>
+</div>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline29">
+<div class="slide-header"></div>
+<h2 id="orgheadline29">Starting with a test for empty list of containers.</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #ffffff;">def</span> <span style="color: #98fb98;">containers</span>(<span style="color: #ffffff;">self</span>, quiet=<span style="color: #40e0d0;">False</span>, <span style="color: #b0c4de;">all</span>=<span style="color: #40e0d0;">False</span>):
+<span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">return</span> [
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   {<span style="color: #bdb76b;">'Id'</span>: container[<span style="color: #bdb76b;">'Id'</span>]}
+<span style="background-color: #1a1a1a;"> </span>   <span style="background-color: #1a1a1a;"> </span>   <span style="color: #ffffff;">for</span> container <span style="color: #ffffff;">in</span> <span style="color: #ffffff;">self</span>._containers.values()
+<span style="background-color: #1a1a1a;"> </span>   ]
+</pre>
+</div>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline30">
+<div class="slide-header"></div>
+<h2 id="orgheadline30">Starting with a test for empty list of containers.</h2>
+<div class="org-src-container">
+
+<pre  class="src src-sh">$ trial tests.integration_test.RealDockerClientTests tests.test.FakeDockerClientTests
+tests.integration_test
+  RealDockerClientTests
+    test_containers_empty ...                                              [OK]
+    test_interface ...                                                     [OK]
+tests.test
+  FakeDockerClientTests
+    test_containers_empty ...                                              [OK]
+    test_interface ...                                                     [OK]
+
+-------------------------------------------------------------------------------
+Ran 4 tests<span style="color: #ffffff;"> in</span> 0.079s
+
+<span style="color: #98fb98;">PASSED</span> (<span style="color: #9acd32;">successes</span>=4)
+</pre>
+</div>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline31">
+<div class="slide-header"></div>
+<h2 id="orgheadline31">Test, write code, refactor, repeat</h2>
+<aside class="notes">
+<ul class="org-ul">
+<li>Create the real and fake API in lock step.</li>
+<li>Or start with a bare bones fake API and then write the real implementation.</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline32">
+<div class="slide-header"></div>
+<h2 id="orgheadline32">Results</h2>
+<div class="org-src-container">
+
+<pre  class="src src-sh">  $ trial tests.test.FakeDockerClientTests tests.integration_test.RealDockerClientTeststests.test
+  FakeDockerClientTests
+    test_containers_empty ...                                              [OK]
+    test_containers_empty_all ...                                          [OK]
+    test_containers_quiet_all ...                                          [OK]
+    test_created_is_listed ...                                             [OK]
+    test_inspect_container ...                                             [OK]
+    test_inspect_unknown_container ...                                     [OK]
+    test_interface ...                                                     [OK]
+    test_remove_container ...                                              [OK]
+    test_remove_unknown_container ...                                      [OK]
+tests.integration_test
+  RealDockerClientTests
+    test_created_is_listed ...                                             [OK]
+    test_inspect_container ...                                             [OK]
+    test_inspect_unknown_container ...                                     [OK]
+    test_interface ...                                                     [OK]
+    test_remove_container ...                                              [OK]
+    test_remove_unknown_container ...                                      [OK]
+
+-------------------------------------------------------------------------------
+Ran 15 tests<span style="color: #ffffff;"> in</span> 0.409s
+
+<span style="color: #98fb98;">PASSED</span> (<span style="color: #9acd32;">successes</span>=15)
+</pre>
+</div>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline36">
+<div class="slide-header"></div>
+<h2 id="orgheadline36">Complications</h2>
+<div class="outline-text-2" id="text-orgheadline36">
+</div><div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline33">
+<div class="slide-header"></div>
+<h3 id="orgheadline33">Chicken-and-egg</h3>
+<ul>
+<li>Can't test ``create<sub>container</sub>`` until we've got a way to list ``containers``</li>
+<li>Can't test list ``containers`` until we've got a way to ``create<sub>container</sub>``</li>
+<li>Implement both together.</li>
+
+</ul>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Creates a container but doesn't start it.</li>
+<li>Demonstrated in earlier example</li>
+<li>Our ``containers`` API currently only returns running containers, so we'll need to modify it a little.</li>
+<li>We can implement a test that creates both of these behaviours.</li>
+<li>Creates and lists the newly created container.</li>
+<li>``docker.Client.create<sub>container</sub>`` and ``containers`` have masses of arguments (too many??) but we'll start with the bare minimum; add only what we need to the interface.</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline34">
+<div class="slide-header"></div>
+<h3 id="orgheadline34">Chicken-and-egg</h3>
+<ul>
+<li>Can't clean up the test containers until we've implemented ``remove<sub>container</sub>``.</li>
+<li>Can't test ``remove<sub>container</sub>`` until we've implemented ``create<sub>container</sub>`` and list ``containers``.</li>
+
+</ul>
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline35">
+<div class="slide-header"></div>
+<h3 id="orgheadline35">Test public APIs not implementation details</h3>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline41">
+<div class="slide-header"></div>
+<h2 id="orgheadline41">Further Reading</h2>
+<div class="outline-text-2" id="text-orgheadline41">
+</div><div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline37">
+<div class="slide-header"></div>
+<h3 id="orgheadline37">IBlockDeviceAPI</h3>
+<p>
+<a href="https://github.com/ClusterHQ/flocker/">https://github.com/ClusterHQ/flocker/</a>
+</p>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Flocker Block device backend</li>
+<li>Simulate virtual block devices</li>
+<li>AWS EBS</li>
+<li>OpenStack Cinder</li>
+<li>A loopback device implementation</li>
+</ul>
+
+</aside>
+
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline38">
+<div class="slide-header"></div>
+<h3 id="orgheadline38">Mimic</h3>
+<p>
+<a href="https://github.com/rackerlabs/mimic">https://github.com/rackerlabs/mimic</a>
+</p>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Not quite what I've described here</li>
+<li>Simulates the OpenStack Nova REST API</li>
+<li>Can be primed with various success and error responses.</li>
+<li>Tracks the state of a Nova REST session</li>
+<li>Even the authentication.</li>
+</ul>
+
+</aside>
+
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline39">
+<div class="slide-header"></div>
+<h3 id="orgheadline39">Eliot</h3>
+<p>
+<a href="https://github.com/ClusterHQ/eliot/">https://github.com/ClusterHQ/eliot/</a>
+</p>
+
+<aside class="notes">
+<ul class="org-ul">
+<li>Structured logging library</li>
+<li>MemoryLogger</li>
+<li>Implements ILogger</li>
+<li>validateLogging</li>
+<li>assertHasAction</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+<section id="slide-orgheadline40">
+<div class="slide-header"></div>
+<h3 id="orgheadline40">Separate your fakes and your inspectors</h3>
+<p>
+<a href="https://glyph.twistedmatrix.com/2015/05/separate-your-fakes-and-your-inspectors.html">https://glyph.twistedmatrix.com/2015/05/separate-your-fakes-and-your-inspectors.html</a>
+</p>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline42">
+<div class="slide-header"></div>
+<h2 id="orgheadline42">Summary</h2>
+<aside class="notes">
+<ul class="org-ul">
+<li>Some of the problems with un-verified fakes and mocks.</li>
+<li>Some examples of those problems</li>
+<li>An example of writing a verified fake for an existing library</li>
+<li>And the problems associated with that.</li>
+<li>Other examples of verified fakes written in Python.</li>
+</ul>
+
+</aside>
+
+<div class="slide-footer"></div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline43">
+<div class="slide-header"></div>
+<h2 id="orgheadline43">Questions?</h2>
+<ul>
+<li>Richard Wall: <a href="https://github.com/wallrj">https://github.com/wallrj</a></li>
+<li>ClusterHQ: <a href="https://github.com/ClusterHQ">https://github.com/ClusterHQ</a></li>
+
+</ul>
+<div class="slide-footer"></div>
+</section>
+</section>
+</div>
+</div>
+
+<script src="http://cdn.jsdelivr.net/reveal.js/3.0.0/lib/js/head.min.js"></script>
+<script src="http://cdn.jsdelivr.net/reveal.js/3.0.0/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: true,
+center: true,
+slideNumber: true,
+rollingLinks: false,
+keyboard: true,
+overview: true,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'linear', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+]
+});
+</script>
+</body>
+</html>
