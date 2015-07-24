@@ -6,7 +6,7 @@
 #+EMAIL: richard.wall@clusterhq.com
 #+REVEAL_THEME: night
 #+REVEAL_TRANS: linear
-#+REVEAL_ROOT: http://cdn.jsdelivr.net/reveal.js/3.0.0/
+#+REVEAL_ROOT: //cdn.jsdelivr.net/reveal.js/3.0.0/
 #+REVEAL-SLIDE-NUMBER: t
 #+REVEAL_SLIDE_HEADER:
 #+REVEAL_SLIDE_FOOTER:
